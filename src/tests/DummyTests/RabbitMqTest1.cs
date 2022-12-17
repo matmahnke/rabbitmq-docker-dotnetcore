@@ -17,19 +17,21 @@ namespace tests.DummyTests
         [Fact]
         public async Task test1()
         {
+            var queueName = $"{nameof(StreamUploadEvent)}Sample";
             var fileName = "test1.json";
-            _rabbitMqFixture.CreateQueuesAndExchanges();
             await _rabbitMqFixture.Publish(new StreamUploadEvent
             {
                 FileName = fileName,
                 EventTime = DateTime.UtcNow
-            });
+            }, queueName);
 
-            await _rabbitMqFixture.SubscribeAndGetAsync<StreamUploadEvent>(onMessageReceived: (@event) =>
-            {
-                @event.FileName.Should().Be(fileName);
-                @event.EventTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-            });
+            await _rabbitMqFixture.SubscribeAndGetAsync<StreamUploadEvent>(
+                queueName,
+                onMessageReceived: (@event) =>
+                {
+                    @event.FileName.Should().Be(fileName);
+                    @event.EventTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+                });
         }
     }
 }

@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  app-tests:
+    image: rabbitmq-dotnet-app-tests
+    build:
+      context: .
+      dockerfile: Dockerfile.Tests
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -12,7 +12,10 @@ namespace tests.Fixtures
 
         public RabbitMqFixture()
         {
-            _config = new MessageBrokerConfiguration();
+            _config = new MessageBrokerConfiguration
+            {
+               ConnectionString = "amqp://guest:guest@host.docker.internal:5672/"
+            };
             CreateContainer().Wait();
         }
 
@@ -23,16 +26,16 @@ namespace tests.Fixtures
             await rabbitMqTestcontainer.StartAsync();
         }
 
-        public void CreateQueuesAndExchanges()
+        public void CreateQueuesAndExchanges<TEvent>(string queueName)
         {
             using var conn = _config.GetConnection();
             using var channel = conn.CreateModel();
 
             var consumerManager = new ConsumerManager();
-            consumerManager.RegisterQueueAndExchange<StreamUploadEvent>(channel, $"{nameof(StreamUploadConsumer)}Sample");
+            consumerManager.RegisterQueueAndExchange<TEvent>(channel, queueName);
         }
 
-        public async Task SubscribeAndGetAsync<TEvent>(Action<TEvent?> onMessageReceived)
+        public async Task SubscribeAndGetAsync<TEvent>(string queueName, Action<TEvent?> onMessageReceived)
         {
             using var conn = _config.GetConnection();
             using var channel = conn.CreateModel();
@@ -40,15 +43,18 @@ namespace tests.Fixtures
             consumerManager.RegisterAndConsumeOneMessage<TEvent>(channel,
                 (@event) =>
                 {
+                    CreateQueuesAndExchanges<TEvent>(queueName);
                     onMessageReceived.Invoke(@event);
                     channel.ExchangeDelete(typeof(TEvent).Name, false);
-                    channel.QueueDelete($"{nameof(StreamUploadConsumer)}Sample", false, false);
+                    channel.QueueDelete(queueName, false, false);
                 },
-                $"{nameof(StreamUploadConsumer)}Sample");
+                queueName);
         }
 
-        public async Task Publish<T>(T message, string exchangeName = null)
+        public async Task Publish<T>(T message, string queueName = null, string exchangeName = null)
         {
+            if (queueName != null)
+                CreateQueuesAndExchanges<T>(queueName);
             var publisher = new Publisher(_config);
             await publisher.Publish(message, exchangeName);
         }

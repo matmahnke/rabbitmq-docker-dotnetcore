@@ -1,0 +1,27 @@
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS dotnet-docker-env
+
+
+RUN apt-get update && \
+    apt-get -qy full-upgrade && \
+    apt-get install -qy curl && \
+    apt-get install -qy curl && \
+    curl -sSL https://get.docker.com/ | sh
+
+FROM dotnet-docker-env
+
+WORKDIR /App
+
+COPY . ./
+
+RUN cd ./src/tests
+
+# separar a parte que não muda em outro container
+
+# RUN docker ps
+
+LABEL maintainer="matmahnke"
+
+RUN dotnet restore
+# Para rodar o docker é necessário configurar o volume /var/run/docker.sock:/var/run/docker.sock
+# Por conta disso qualquer comando docker não pode ser executado no momento do docker build (incluindo dotnet test) 
+ENTRYPOINT ["dotnet", "test"]

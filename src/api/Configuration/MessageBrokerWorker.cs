@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
-using rabbitmq_dotnet.Consumers;
+﻿using rabbitmq_dotnet.Consumers;
 using rabbitmq_dotnet_infrastructure;
 
 namespace rabbitmq_dotnet.Configuration
